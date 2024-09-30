@@ -10,10 +10,10 @@ local function getPlayerInfo()
 	local dashCount = memory.read_u8(0x0018C5);
 	local dashCooling = memory.read_u8(0x0018C6);
 
-	return "Pos_X: "..posX
-	.."\nPos_Y: "..posY
-	.."\nVel_X: "..velX
-	.."\nVel_Y: "..velY
+	return "Pos_X: "..posX.."\n    ("..memory.read_s16_le(0x000094).."|"..string.format("%x", memory.read_u8(0x0013DA))..")"
+	.."\nPos_Y: "..posY.."\n    ("..memory.read_s16_le(0x000096).."|"..string.format("%x", memory.read_u8(0x0013DC))..")"
+	.."\nSpeed_X: "..velX.."\n    ("..memory.read_s8(0x00007B).."|"..string.format("%x", memory.read_u8(0x00007B))..")"
+	.."\nSpeed_Y: "..velY.."\n    ("..memory.read_s8(0x00007D).."|"..string.format("%x", memory.read_u8(0x00007D))..")"
 	.."\nAcceleration: "..acceleration.." ("..memory.read_u8(0x0013E4)..")"
 	.."\nDash_Count: "..dashCount
 	.."\nDash_Cooling: "..dashCooling
@@ -39,7 +39,8 @@ local function getGameTime()
 	if millisecond < 10 then millisecond = "00"..millisecond;
 	elseif millisecond < 100 then millisecond = "0"..millisecond end
 
-	return hour..":"..minute..":"..second.."."..millisecond
+	return emu.framecount().."|"..emu.lagcount().."|"..(emu.islagged() and "*" or "-")
+		.."\n"..hour..":"..minute..":"..second.."."..millisecond
 end
 
 -- 获取每帧按下的按键
@@ -100,6 +101,7 @@ local buttonList = {{0, {}}};
 local function getJoypadButtonList()
 	-- 要返回的结果
 	local str = "";
+	local listlength = 11;
 
 	local frameButtonList = getJoypadFranmeButton();
 	table.sort(frameButtonList);
@@ -109,18 +111,24 @@ local function getJoypadButtonList()
 			buttonList[1][1] = buttonList[1][1] + 1;
 		else
 			table.insert(buttonList, 1, {1, frameButtonList});
-			table.remove(buttonList, 10);
+			if #buttonList >= listlength then
+				table.remove(buttonList, listlength);
+			end
 		end
 	else
 		if #buttonList == 0 then
 			table.insert(buttonList, 1, {1, frameButtonList});
-			table.remove(buttonList, 10);
+			if #buttonList >= listlength then
+				table.remove(buttonList, listlength);
+			end
 		else
 			if isButtonList(buttonList[1][2], frameButtonList) then
 				buttonList[1][1] = buttonList[1][1] + 1;
 			else
 				table.insert(buttonList, 1, {1, frameButtonList});
-				table.remove(buttonList, 10);
+				if #buttonList >= listlength then
+					table.remove(buttonList, listlength);
+				end
 			end
 		end
 	end
